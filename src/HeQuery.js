@@ -84,6 +84,13 @@
   };
 
 
+  // Helpers
+  HeQuery.emptyArray = function(a) {
+    while(a.length)
+      a.pop();
+  };
+
+
   //////////
   // INIT //
   //////////
@@ -945,42 +952,103 @@
   ///////////
   // Fires event when document loads or if already loaded
   HeQuery.ready = (function() {
-    var is_ready = false;
+    var is_ready = false,
+        contentLoadedHandler,
+        callbacks = [],
+        timer = null;
 
-    function DOMContentLoaded() {
-      is_ready = true;
 
-      // #ERROR 
-      // Falis in IE and FF
-      try {
-        document.removeEventListener(DOMContentLoaded);
-      } catch(e) {
-
-      }
-    }
-
-    function isReady() {
-      return is_ready || (document && document.readyState === 'complete');
-    }
-
-    if(isReady()) {
-      is_ready = true;
+    if(document.readyState === 'complete') {
+      fireReady();
     }
     else {
-      document.addEventListener('DOMContentLoaded', DOMContentLoaded, false);
-    }
-
-    return function ready(fn) {
-      if(isReady()) {
-        // #!# Might need to set context explicitly
-        fn();
+      // Event listener
+      if(document.addEventListener) {
+        contentLoadedHandler = function() {
+          document.removeEventListener('DOMContentLoaded', contentLoadedHandler, false);
+          fireReady();
+        };
+        document.addEventListener('DOMContentLoaded', contentLoadedHandler, false);
+      }
+      else if(document.attachEvent) {
+        contentLoadedHandler = function() {
+          document.detachEvent('onreadystatechange', contentLoadedHandler);
+          fireReady();
+        };
+        document.attachEvent('onreadystatechange', contentLoadedHandler);
       }
 
-      // For now just bind event listener to window load
-      $(document).on('DOMContentLoaded', fn);
+      // Perhaps add a scrollCheck
+    }
 
-      return this;
-    };
+    // Exposed function
+    function ready(fn) {
+
+      addCallback(fn);
+
+    }
+
+    function addCallback(fn) {
+      callbacks.push(fn);
+
+      // If the document is ready
+      // and we haven't scheduled a timer
+      if(is_ready && timer === null) {
+        // Set a timer so we don't interrupt any parsing of a file in the middle by calling the callback
+        timer = setTimeout(fireReady, 0);
+      }
+    }
+
+    function fireReady() {
+      // Set timer to null
+      timer = null;
+      is_ready = true;
+
+      // Call all callbacks
+      for(var i = 0; i < callbacks.length; i++) {
+        callbacks[i]();
+      }
+
+      HeQuery.emptyArray(callbacks);
+    }
+
+
+    return ready;
+
+    // function DOMContentLoaded() {
+    //   is_ready = true;
+
+    //   // #ERROR 
+    //   // Falis in IE and FF
+    //   try {
+    //     document.removeEventListener(DOMContentLoaded);
+    //   } catch(e) {
+
+    //   }
+    // }
+
+    // function isReady() {
+    //   return is_ready || (document && document.readyState === 'complete');
+    // }
+
+    // if(isReady()) {
+    //   is_ready = true;
+    // }
+    // else {
+    //   document.addEventListener('DOMContentLoaded', DOMContentLoaded, false);
+    // }
+
+    // return function ready(fn) {
+    //   if(isReady()) {
+    //     // #!# Might need to set context explicitly
+    //     fn();
+    //   }
+
+    //   // For now just bind event listener to window load
+    //   $(document).on('DOMContentLoaded', fn);
+
+    //   return this;
+    // };
   })();
 
 
@@ -1092,11 +1160,7 @@
   })();
 
 
-  // Helpers
-  HeQuery.emptyArray = function(a) {
-    while(a.length)
-      a.pop();
-  };
+  
 
   // VARS ON HeQuery
   HeQuery.guid = 1;
