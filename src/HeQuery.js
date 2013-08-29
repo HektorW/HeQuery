@@ -231,28 +231,184 @@
   };
 
 
+
+
   ////////
   // ON //
   ////////
   // Bind events
   // Does not keep track of handlers
-  HeQuery.fn.on = function(event, callback) {
-    var i, len, elem;
+  HeQuery.fn.on = (function() {
+    function addEvent(elem, type, fn) {
+      var data = HeQuery._data(elem);
 
-    // Loop through all elements
-    for(i = 0, len = this.length; i < len; i++) {
-      elem = this[i];
 
-      // #ERROR
-      // Uncaught TypeError: Object #<NodeList> has no method 'addEventListener' 
+      if(!data.handlers)
+        data.handlers = {};
 
-      // Bind event listener, and bind element as context for callback
-      elem.addEventListener(event, callback.bind(elem), false);
+      if(!data.handlers[type])
+        data.handlers[type] = [];
+
+      if(!fn.guid)
+        fn.guid = HeQuery.guid++;
+
+      data.handlers[type].push(fn);
+
+      if(!data.dispatcher) {
+        data.disabled = false;
+        data.dispatcher = function(event) {
+
+          if(data.disabled)
+            return;
+
+          var handlers = data.handlers[event.type];
+          if(handlers) {
+            for(var n = 0; n < handlers.length; n++) {
+              handlers[n].call(elem, event);
+            }
+          }
+        };
+      }
+
+      if(data.handlers[type].length === 1) {
+        if(document.addEventListener)
+          elem.addEventListener(type, data.dispatcher, false);
+        else if(document.attachEvent)
+          elem.attachEvent('on'+type, data.dispatcher);
+      }
     }
 
-    // Enable method chaing
-    return this;
-  };
+
+
+
+    return function on(type, callback) {
+      var i, len, elem, data;
+
+      // Loop through all elements
+      for(i = 0, len = this.length; i < len; i++) {
+        elem = this[i];
+
+
+        addEvent(elem, type, callback);
+        // #ERROR
+        // Uncaught TypeError: Object #<NodeList> has no method 'addEventListener' 
+
+      }
+
+      // Enable method chaing
+      return this;
+    };
+  })();
+
+
+  // Add event listener
+
+  ///////////////////////////
+  // Remove event listener //
+  ///////////////////////////
+  if(document.removeEventListener) {
+    HeQuery.removeEventListener = function(elem, type, fn) {
+      elem.removeEventListener(type, fn, false);
+    };
+  }
+  else if(document.detachEvent) {
+    HeQuery.removeEventListener = function(elem, type, fn) {
+      elem.detachEvent('on'+type, fn);
+    };
+  }
+
+
+
+  /////////
+  // OFF //
+  /////////
+  // Unbind events
+  HeQuery.fn.off = (function(){
+
+    function tidyUp(elem, type) {
+      function isEmpty(obj) {
+        for(var prop in obj)
+          return false;
+        return true;
+      }
+
+      var data = HeQuery._data(elem);
+
+      if(data.handlers[type].length === 0) {
+        delete data.handlers[type];
+
+        HeQuery.removeEventListener(elem, type, data.dispatcher);
+      }
+
+      if(isEmpty(data.handlers)) {
+        delete data.handlers;
+        delete data.dispatcher;
+      }
+      if(isEmpty(data)) {
+        HeQuery.removeData(elem);
+      }
+    }
+
+    // Function user internally for <off>
+    function removeEvent(elem, type, fn) {
+      // Fetch data associated with element
+      data = HeQuery._data(elem);
+
+      // See if any handlers are bound, else just leave
+      if(!data.handlers)
+        return;
+
+      // Internally used function, function expression to avoid evaluating if we end eariler
+      var removeType = function(t) {
+        // Empty handler array
+        HeQuery.emptyArray(data.handlers[t]);
+        // Tidy up our data
+        tidyUp(elem, t);
+      };
+
+
+      var handlers = data.handlers[type];
+      if(!handlers)
+        return;
+
+      // If no type is supplied we remove all handlers on elemen
+      if(!type) {
+        for(var t in handlers)
+          removeType(t);
+        return;
+      }
+
+
+      // If no explicit function is supplied we remove all of type
+      if(!fn) {
+        removeType(type);
+        return;
+      }
+
+      // If we reach here we have a function and type, so we try to remove it
+      if(fn.guid) {
+        for(var n = 0; n < handlers.length; ++n) {
+          if(handlers[n].guid === fn.guid)
+            handlers.splice(n--, 1);
+        }
+      }
+    }
+
+    // Exposed function
+    return function off(type, handler) {
+      var i, len, elem, data;
+
+      for(i = 0, len = this.length; i < len; ++i) {
+
+        elem = this[i];
+
+        removeEvent(elem, type, handler);
+
+      }
+    };
+  })();
+
+
   ///////////
   // CLICK //
   ///////////
@@ -417,7 +573,7 @@
 
       for(i = 0, len = this.length; i < len; i++){
         elem = this[i];
-        combined += ((i > 0)? ' ' : '') + elem.innerText;
+        combined += ((i > 0)? ' ' : '') + (elem.textContent || elem.innerText);
       }
 
       return combined;
@@ -425,8 +581,14 @@
 
     // Content provided, set text
     else {
+      // Empty element first
+
       for(i = 0, len = this.length; i < len; i++){
-        this[i].innerText = content;
+        // Use right method for text
+        if(this[i].innerText)
+          this[i].innerText = content;
+        else if(this[i].textContent)
+          this[i].textContent = content;
       }
 
       return this;
@@ -633,6 +795,8 @@
     return (this[0].nodeType === ELEMENT_NODE) ? this[0].offsetWidth : 0;
   };
 
+
+
   ///////////
   // HEIGHT //
   ///////////
@@ -656,6 +820,53 @@
     
     return (this[0].nodeType === ELEMENT_NODE) ? this[0].offsetHeight : 0;
   };
+
+
+
+  //////////
+  // DATA //
+  //////////
+  // For internal use
+  // Associate data with elements
+  (function() {
+
+    var cache = {},
+        guidCount = 1,
+        expando = "data-" + Date.now().toString();
+
+
+    HeQuery._data = function(element) {
+      // Might be other types of element which should support data
+      // if(element.nodeType !== ELEMENT_NODE)
+      //   return;
+
+      var guid = element[expando];
+      if(!guid) {
+        guid = element[expando] = guidCount++;
+        cache[guid] = {};
+      }
+
+      return cache[guid];
+    };
+
+    HeQuery._removeData = function(element) {
+      var guid = element[expando];
+      if(!guid)
+        return;
+
+      delete cache[guid];
+
+      try {
+        delete element[expando];
+      } catch(e) {
+        if(element.removeAttribute) {
+          element.removeAttribute(expando);
+        }
+      }
+    };
+  })();
+
+
 
 
   ////////////
@@ -736,18 +947,31 @@
   HeQuery.ready = (function() {
     var is_ready = false;
 
-    if(document && document.readyState === 'complete') {
+    function DOMContentLoaded() {
+      is_ready = true;
+
+      // #ERROR 
+      // Falis in IE and FF
+      try {
+        document.removeEventListener(DOMContentLoaded);
+      } catch(e) {
+
+      }
+    }
+
+    function isReady() {
+      return is_ready || (document && document.readyState === 'complete');
+    }
+
+    if(isReady()) {
       is_ready = true;
     }
     else {
-      document.addEventListener('DOMContentLoaded', function DOMContentLoaded() {
-        is_ready = true;
-        document.removeEventListener(DOMContentLoaded);
-      }, false);
+      document.addEventListener('DOMContentLoaded', DOMContentLoaded, false);
     }
 
     return function ready(fn) {
-      if(is_ready) {
+      if(isReady()) {
         // #!# Might need to set context explicitly
         fn();
       }
@@ -806,7 +1030,7 @@
   ////////////
   // COLORS //
   ////////////
-  $.randColor = (function() {
+  HeQuery.randColor = (function() {
     var colors = [];
 
     return function() {
@@ -818,11 +1042,11 @@
   ////////////
   // RANDOM //
   ////////////
-  $.randomRange = function(min, max) {
+  HeQuery.randomRange = function(min, max) {
     return Math.random() * (max-min) + min;
   };
   // Return an integer between min and max, inclusive
-  $.randomRangeInt = function(min, max) {
+  HeQuery.randomRangeInt = function(min, max) {
     return Math.floor($.randomRange(min, max+1));
   };
 
@@ -866,4 +1090,14 @@
       };
     };
   })();
+
+
+  // Helpers
+  HeQuery.emptyArray = function(a) {
+    while(a.length)
+      a.pop();
+  };
+
+  // VARS ON HeQuery
+  HeQuery.guid = 1;
 })();
