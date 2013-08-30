@@ -986,6 +986,7 @@
 
       addCallback(fn);
 
+      return this;
     }
 
     function addCallback(fn) {
@@ -1014,41 +1015,6 @@
 
 
     return ready;
-
-    // function DOMContentLoaded() {
-    //   is_ready = true;
-
-    //   // #ERROR 
-    //   // Falis in IE and FF
-    //   try {
-    //     document.removeEventListener(DOMContentLoaded);
-    //   } catch(e) {
-
-    //   }
-    // }
-
-    // function isReady() {
-    //   return is_ready || (document && document.readyState === 'complete');
-    // }
-
-    // if(isReady()) {
-    //   is_ready = true;
-    // }
-    // else {
-    //   document.addEventListener('DOMContentLoaded', DOMContentLoaded, false);
-    // }
-
-    // return function ready(fn) {
-    //   if(isReady()) {
-    //     // #!# Might need to set context explicitly
-    //     fn();
-    //   }
-
-    //   // For now just bind event listener to window load
-    //   $(document).on('DOMContentLoaded', fn);
-
-    //   return this;
-    // };
   })();
 
 
