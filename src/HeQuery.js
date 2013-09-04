@@ -89,6 +89,13 @@
     while(a.length)
       a.pop();
   };
+  HeQuery.each = function(array, fn, thisArg) {
+    // For each item in array
+    for(var item_n = 0, item_len = array.length; item_n < item_len; ++item_n){
+      // Item, index, array
+      fn.call(thisArg, array[item_n], item_n, array);
+    }
+  };
 
 
   //////////
@@ -799,7 +806,7 @@
       return this;
     }
     
-    return (this[0].nodeType === ELEMENT_NODE) ? this[0].offsetWidth : 0;
+    return (this[0] && this[0].nodeType === ELEMENT_NODE) ? this[0].offsetWidth : 0;
   };
 
 
