@@ -965,7 +965,7 @@
         timer = null;
 
 
-    if(document.readyState === 'complete') {
+    if(document.readyState === 'complete' || document.readyState === 'interactive') {
       fireReady();
     }
     else {
@@ -1001,7 +1001,7 @@
 
       // If the document is ready
       // and we haven't scheduled a timer
-      if(is_ready && timer === null) {
+      if(is_ready && timer == null) {
         // Set a timer so we don't interrupt any parsing of a file in the middle by calling the callback
         timer = setTimeout(fireReady, 0);
       }
