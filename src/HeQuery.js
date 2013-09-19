@@ -162,12 +162,16 @@
       this.length = 0;
 
     // Multiple elements supplied
-    if(elements.length) {
+    // #BUG
+    // When a NodeList is passed in with length 0 the check previously failed
+    // Not sure about wanted behaviour in this case
+    // Checking for undefined seems better
+    // Else the NodeList would be added as the first element and length would be 1
+    if(elements.length !== undefined) {
       for(var i = 0, len = elements.length; i < len; i++) {
         this.addElement(elements[i]);
       }
     }
-
     // Single element supplied
     else {
       this.addElement(elements);
@@ -199,6 +203,18 @@
             : this.each(function() { this.setAttribute(attribute, value); });
   };
 
+  HeQuery.fn.removeAttr = function(attribute) {
+    this.each(function() { this.removeAttribute(attribute); });
+  };
+
+
+  ///////////
+  // VALUE //
+  ///////////
+  HeQuery.fn.val = function(value) {
+    return this.attr('value', value);
+  };
+
 
   ////////////
   // APPEND //
@@ -226,7 +242,7 @@
         nodes = HeQuery.query(content);
       }
     }
-    else if(content.nodeType) {
+    else { // if(content.nodeType) {
       nodes = content;
     }
 
@@ -237,14 +253,48 @@
         continue;
 
       for(j = 0, lenj = nodes.length; j < lenj; j++){
-        element.appendChild(nodes[j].cloneNode(true));
+        // element.appendChild(nodes[j].cloneNode(true));
+        element.appendChild(nodes[j]);
       }
     }
 
     return this;
   };
 
+  ////////////
+  // REMOVE //
+  ////////////
+  HeQuery.fn.remove = function() {
+    // Remove events
+    this.off();
 
+    for(var i = 0; i < this.length; i++) {
+      var elem = this[0];
+
+      HeQuery._removeData(elem);
+
+      if(elem.parentNode)
+        elem.parentNode.removeChild(elem);
+
+      if(typeof elem.outerHTML !== 'undefined')
+        elem.outerHTML = '';
+    }
+  };
+
+
+  ///////////
+  // CLONE //
+  ///////////
+  HeQuery.fn.clone = function() {
+    var deep = true;
+
+    var elems = [];
+
+    for(var i = 0; i < this.length; i++)
+      elems.push(this[0].cloneNode(deep));
+
+    return new HeQuery.fn.init(elems);
+  };
 
 
   ////////
@@ -599,9 +649,11 @@
 
       for(i = 0, len = this.length; i < len; i++){
         // Use right method for text
-        if(this[i].innerText)
+        // #BUG
+        // Didn't check for undefined -> empty string '' returned as false
+        if(this[i].innerText !== undefined)
           this[i].innerText = content;
-        else if(this[i].textContent)
+        else if(this[i].textContent !== undefined)
           this[i].textContent = content;
       }
 
@@ -1029,42 +1081,62 @@
   // PREFIXES //
   //////////////
   HeQuery.fixPrefixes = function() {
-    performance = window.performance || {};
-    performance.now =
-      performance.now                     ||
-      performance.webkitNow               ||
-      performance.mozNow                  ||
-      performance.msNow                   ||
-      performance.oNow                    ||
+    var W = window;
+
+    W.performance = W.performance || {};
+    W.performance.now =
+      W.performance.now       ||
+      W.performance.webkitNow ||
+      W.performance.mozNow    ||
+      W.performance.msNow     ||
+      W.performance.oNow      ||
       Date.now;
 
-    window.requestAnimationFrame =
-      window.requestAnimationFrame        ||
-      window.webkitRequestAnimationFrame  ||
-      window.mozRequestAnimationFrame     ||
-      window.oRequestAnimationFrame       ||
-      window.msRequestAnimationFrame      ||
+    W.requestAnimationFrame =
+      W.requestAnimationFrame       ||
+      W.webkitRequestAnimationFrame ||
+      W.mozRequestAnimationFrame    ||
+      W.oRequestAnimationFrame      ||
+      W.msRequestAnimationFrame     ||
       function(callback){
           setTimeout(function(){
-              callback(window.performance.now());
+              callback(W.performance.now());
           }, 1000/60);
       };
 
-    window.cancelAnimationFrame =
-      window.cancelAnimationFrame        ||
-      window.webkitCancelAnimationFrame  ||
-      window.mozCancelAnimationFrame     ||
-      window.oCancelAnimationFrame       ||
-      window.msCancelAnimationFrame      ||
+    W.cancelAnimationFrame =
+      W.cancelAnimationFrame       ||
+      W.webkitCancelAnimationFrame ||
+      W.mozCancelAnimationFrame    ||
+      W.oCancelAnimationFrame      ||
+      W.msCancelAnimationFrame     ||
       function(callback){
         clearTimeout(callback);
       };
 
-    window.AudioContext =
-      window.AudioContext       ||
-      window.webkitAudioContext ||
-      window.mozAudioContext    ||
+    W.AudioContext =
+      W.AudioContext       ||
+      W.webkitAudioContext ||
+      W.mozAudioContext    ||
       undefined;
+  };
+
+
+  /////////////
+  // COOKIES //
+  /////////////
+  HeQuery.cookies = {
+    read: function() {
+      return document.cookie;
+    },
+
+    write: function() {
+
+    },
+
+    remove: function() {
+
+    }
   };
 
 
