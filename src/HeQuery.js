@@ -6,41 +6,6 @@
  *
  * @author Hektor
  */
-
-
- 
-/**
- * DOM Exceptions
- * 
- * INDEX_SIZE_ERR = 1;                          The index is not in the allowed range.  INDEX_SIZE_ERR (1)
- * DOMSTRING_SIZE_ERR = 2; // historical                          
- * HIERARCHY_REQUEST_ERR = 3;                   The operation would yield an incorrect node tree. HIERARCHY_REQUEST_ERR (3)        
- * WRONG_DOCUMENT_ERR = 4;                      The object is in the wrong document.  WRONG_DOCUMENT_ERR (4)      
- * INVALID_CHARACTER_ERR = 5;                   The string contains invalid characters. INVALID_CHARACTER_ERR (5)        
- * NO_DATA_ALLOWED_ERR = 6; // historical                         
- * NO_MODIFICATION_ALLOWED_ERR = 7;             The object can not be modified. NO_MODIFICATION_ALLOWED_ERR (7)              
- * NOT_FOUND_ERR = 8;                           The object can not be found here. NOT_FOUND_ERR (8)
- * NOT_SUPPORTED_ERR = 9;                       The operation is not supported. NOT_SUPPORTED_ERR (9)    
- * INUSE_ATTRIBUTE_ERR = 10; // historical                          
- * INVALID_STATE_ERR = 11;                      The object is in an invalid state.  INVALID_STATE_ERR (11)      
- * SYNTAX_ERR = 12;                             The string did not match the expected pattern.  SYNTAX_ERR (12)
- * INVALID_MODIFICATION_ERR = 13;               The object can not be modified in this way. INVALID_MODIFICATION_ERR (13)             
- * NAMESPACE_ERR = 14;                          The operation is not allowed by Namespaces in XML. [XMLNS]  NAMESPACE_ERR (14)   
- * INVALID_ACCESS_ERR = 15;                     The object does not support the operation or argument.  INVALID_ACCESS_ERR (15)       
- * VALIDATION_ERR = 16; // historical                         
- * TYPE_MISMATCH_ERR = 17; // historical; use JavaScript's TypeError instead                          
- * SECURITY_ERR = 18;                           The operation is insecure.  SECURITY_ERR (18) 
- * NETWORK_ERR = 19;                            A network error occurred. NETWORK_ERR (19) 
- * ABORT_ERR = 20;                              The operation was aborted.  ABORT_ERR (20)
- * URL_MISMATCH_ERR = 21;                       The given URL does not match another URL. URL_MISMATCH_ERR (21)     
- * QUOTA_EXCEEDED_ERR = 22;                     The quota has been exceeded.  QUOTA_EXCEEDED_ERR (22)
- * TIMEOUT_ERR = 23;                            The operation timed out.  TIMEOUT_ERR (23)
- * INVALID_NODE_TYPE_ERR = 24;                  The supplied node is incorrect or has an incorrect ancestor for this operation. INVALID_NODE_TYPE_ERR (24)
- * DATA_CLONE_ERR = 25;                         The object can not be cloned. DATA_CLONE_ERR (25)
- */
- 
- 
- 
  
 
 (function() {
@@ -1122,6 +1087,82 @@
   };
 
 
+  ////////////////////
+  // POLYFILL ARRAY //
+  ////////////////////
+  HeQuery.polyfillArray = function() {
+    /* For each */
+    if(!Array.prototype.forEach){
+      (function(GLOBAL){
+        Array.prototype.forEach = function(callback, thisarg){
+          thisarg = thisarg || GLOBAL;
+          for(var i = 0, len = this.length; i < len; i++){
+            callback.call(thisarg, this[i], i, this);
+          }
+        };
+      })(this);
+    }
+    /* Contains */
+    if(!Array.prototype.contains){
+      Array.prototype.contains = function(search, start){
+        start = start || 0;
+        return (this.indexOf(search) >= start);
+      };
+    }
+    /* Filter */
+    if(!Array.prototype.filter) {
+      Array.prototype.filter = function(fun /*, thisp*/) {
+        'use strict';
+
+        if (!this) {
+          throw new TypeError();
+        }
+
+        var objects = Object(this);
+        var len = objects.length >>> 0;
+        if (typeof fun !== 'function') {
+          throw new TypeError();
+        }
+
+        var res = [];
+        var thisp = arguments[1];
+        for (var i in objects) {
+          if (objects.hasOwnProperty(i)) {
+            if (fun.call(thisp, objects[i], i, objects)) {
+              res.push(objects[i]);
+            }
+          }
+        }
+
+        return res;
+      };
+    }
+  };
+
+  /////////////////////
+  // POLYFILL STRING //
+  /////////////////////
+  HeQuery.polyfillString = function() {
+    /* Format */
+    if(!String.prototype.format){
+      String.prototype.format = function(){
+        var args = arguments;
+        return this.replace(/{(\d+)}/g, function(match, number){
+          return (args[number] !== undefined)? args[number] : match;
+        });
+      };
+    }
+    /* Contains */
+    if(!String.prototype.contains){
+      String.prototype.contains = function(search, start){
+        start = start || 0;
+        return (this.indexOf(search) >= start);
+      };
+    }
+  };
+
+
+
   /////////////
   // COOKIES //
   /////////////
@@ -1234,3 +1275,40 @@
   // VARS ON HeQuery
   HeQuery.guid = 1;
 })();
+
+
+
+
+
+
+ 
+/**
+ * DOM Exceptions
+ * 
+ * INDEX_SIZE_ERR = 1;                          The index is not in the allowed range.  INDEX_SIZE_ERR (1)
+ * DOMSTRING_SIZE_ERR = 2; // historical                          
+ * HIERARCHY_REQUEST_ERR = 3;                   The operation would yield an incorrect node tree. HIERARCHY_REQUEST_ERR (3)        
+ * WRONG_DOCUMENT_ERR = 4;                      The object is in the wrong document.  WRONG_DOCUMENT_ERR (4)      
+ * INVALID_CHARACTER_ERR = 5;                   The string contains invalid characters. INVALID_CHARACTER_ERR (5)        
+ * NO_DATA_ALLOWED_ERR = 6; // historical                         
+ * NO_MODIFICATION_ALLOWED_ERR = 7;             The object can not be modified. NO_MODIFICATION_ALLOWED_ERR (7)              
+ * NOT_FOUND_ERR = 8;                           The object can not be found here. NOT_FOUND_ERR (8)
+ * NOT_SUPPORTED_ERR = 9;                       The operation is not supported. NOT_SUPPORTED_ERR (9)    
+ * INUSE_ATTRIBUTE_ERR = 10; // historical                          
+ * INVALID_STATE_ERR = 11;                      The object is in an invalid state.  INVALID_STATE_ERR (11)      
+ * SYNTAX_ERR = 12;                             The string did not match the expected pattern.  SYNTAX_ERR (12)
+ * INVALID_MODIFICATION_ERR = 13;               The object can not be modified in this way. INVALID_MODIFICATION_ERR (13)             
+ * NAMESPACE_ERR = 14;                          The operation is not allowed by Namespaces in XML. [XMLNS]  NAMESPACE_ERR (14)   
+ * INVALID_ACCESS_ERR = 15;                     The object does not support the operation or argument.  INVALID_ACCESS_ERR (15)       
+ * VALIDATION_ERR = 16; // historical                         
+ * TYPE_MISMATCH_ERR = 17; // historical; use JavaScript's TypeError instead                          
+ * SECURITY_ERR = 18;                           The operation is insecure.  SECURITY_ERR (18) 
+ * NETWORK_ERR = 19;                            A network error occurred. NETWORK_ERR (19) 
+ * ABORT_ERR = 20;                              The operation was aborted.  ABORT_ERR (20)
+ * URL_MISMATCH_ERR = 21;                       The given URL does not match another URL. URL_MISMATCH_ERR (21)     
+ * QUOTA_EXCEEDED_ERR = 22;                     The quota has been exceeded.  QUOTA_EXCEEDED_ERR (22)
+ * TIMEOUT_ERR = 23;                            The operation timed out.  TIMEOUT_ERR (23)
+ * INVALID_NODE_TYPE_ERR = 24;                  The supplied node is incorrect or has an incorrect ancestor for this operation. INVALID_NODE_TYPE_ERR (24)
+ * DATA_CLONE_ERR = 25;                         The object can not be cloned. DATA_CLONE_ERR (25)
+ */
+ 
