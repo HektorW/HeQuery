@@ -31,7 +31,8 @@
   };
 
   // Shorthand variable for HeQuery
-  this.$ = HeQuery;
+  if(typeof this.$ === 'undefined')
+    this.$ = HeQuery;
 
   // CLASS DOM ELEMENT
   HeQuery.fn = {
@@ -60,6 +61,9 @@
       // Item, index, array
       fn.call(thisArg, array[item_n], item_n, array);
     }
+  };
+  HeQuery.isWindow = function(obj) {
+    return obj != null && obj.window == obj;
   };
 
 
@@ -132,7 +136,7 @@
     // Not sure about wanted behaviour in this case
     // Checking for undefined seems better
     // Else the NodeList would be added as the first element and length would be 1
-    if(elements.length !== undefined) {
+    if(elements.length !== undefined && !HeQuery.isWindow(elements)) {
       for(var i = 0, len = elements.length; i < len; i++) {
         this.addElement(elements[i]);
       }
@@ -234,17 +238,33 @@
     this.off();
 
     for(var i = 0; i < this.length; i++) {
-      var elem = this[0];
+      var elem = this[i];
 
       HeQuery._removeData(elem);
 
       if(elem.parentNode)
         elem.parentNode.removeChild(elem);
 
-      if(typeof elem.outerHTML !== 'undefined')
-        elem.outerHTML = '';
+      // if(typeof elem.outerHTML !== 'undefined')
+      //   elem.outerHTML = '';
     }
   };
+
+
+  ///////////
+  // EMPTY //
+  ///////////
+  // HeQuery.fn.empty = function() {
+  //   var elem,
+  //       i = 0;
+
+  //   for(; (elem = this[i]) != null; i++) {
+  //     if(elem.nodeType === 1) {
+
+  //     }
+  //   }
+  // };
+
 
 
   ///////////
@@ -436,6 +456,11 @@
       }
     };
   })();
+
+
+  HeQuery.fn.trigger = function() {
+    
+  };
 
 
   ///////////
@@ -1178,6 +1203,28 @@
     remove: function() {
 
     }
+  };
+
+
+  /////////////
+  // URL-GET //
+  /////////////
+  HeQuery.getURLArgs = function() {
+    var s = window.location.search;
+    var o = {};
+
+    var rgx = /[^&|?]+/g;
+
+    var pairs = s.match(rgx);
+
+    if(pairs) {
+      for(var p = 0; p < pairs.length; p++) {
+        var sp = pairs[p].split('=');
+        o[sp[0]] = sp[1] || true;
+      }
+    }
+
+    return o;
   };
 
 
