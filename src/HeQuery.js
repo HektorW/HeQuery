@@ -26,13 +26,13 @@
   var NOTATION_NODE = 12; // Deprecated
 
   // Exposed function
-  var HeQuery = this.HeQuery = function(selector) {
+  var HeQuery = function(selector) {
     return new HeQuery.fn.init(selector);
   };
 
-  // Shorthand variable for HeQuery
-  if(typeof this.$ === 'undefined')
-    this.$ = HeQuery;
+  // // Shorthand variable for HeQuery
+  // if(typeof this.$ === 'undefined')
+  //   this.$ = HeQuery;
 
   // CLASS DOM ELEMENT
   HeQuery.fn = {
@@ -1317,10 +1317,21 @@
   })();
 
 
-  
-
   // VARS ON HeQuery
   HeQuery.guid = 1;
+
+
+
+
+
+
+  if(typeof define !== 'undefined' && define.amd) {
+    define([], function() { return HeQuery; });
+  } else {
+    if(typeof this.$ === 'undefined')
+      this.$ = HeQuery;
+    this.HeQuery = HeQuery;
+  }
 })();
 
 
