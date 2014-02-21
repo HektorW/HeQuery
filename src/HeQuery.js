@@ -594,15 +594,16 @@
 
     // If string supplied as argument
     // Set the innerHTML of each object
-    if(typeof arguments[0] === 'string') {
-      var html = arguments[0];
+    // 
+    // if(typeof arguments[0] === 'string') {
+    var html = ''+arguments[0];
 
-      for(i = 0, len = this.length; i < len; i++) {
-        elem = this[i];
+    for(i = 0, len = this.length; i < len; i++) {
+      elem = this[i];
 
-        elem.innerHTML = html;
-      }
+      elem.innerHTML = html;
     }
+    // }
 
     // Enable method chaining
     return this;
