@@ -211,7 +211,10 @@
         nodes = HeQuery.query(content);
       }
     }
-    else { // if(content.nodeType) {
+    else if (content.nodeType) {
+      nodes = [content];
+    }
+    else {
       nodes = content;
     }
 
